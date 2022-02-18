@@ -1,71 +1,92 @@
-use dqk_ast::{AssignNewStmt, AssignStmt, ExprStmt, Ident, Stmt, Symbol, TokenKind};
-use dqk_error::{Error, Result};
+use crate::{
+    CloseBrace, CloseParen, ColonEqual, Comma, Eol, Equal, Expr, Ident, Ln, OpenBrace, OpenParen,
+    Punctuated, SemiColon, Span, Spanned, SpannedOption, Tupled, Type, Where,
+};
 
-use crate::{Parse, Parser};
+#[derive(Clone, Debug, Spanned)]
+pub struct AssignNewStmt {
+    pub ident: Ident,
+    pub equal: ColonEqual,
+    pub expr: Expr,
+    pub eol: Eol,
+}
 
-impl Parse for AssignNewStmt {
-    fn parse(parser: &mut Parser) -> Result<Self> {
-        Ok(Self {
-            ident: parser.parse()?,
-            equal: parser.parse()?,
-            expr: parser.parse()?,
-            eol: parser.parse()?,
-        })
+#[derive(Clone, Debug, Spanned)]
+pub struct AssignStmt {
+    pub ident: Ident,
+    pub equal: Equal,
+    pub expr: Expr,
+    pub eol: Eol,
+}
+
+#[derive(Clone, Debug)]
+pub struct Block {
+    pub open: OpenBrace,
+    pub stmts: Vec<Stmt>,
+    pub close: CloseBrace,
+}
+
+impl Spanned for Block {
+    fn span(&self) -> Span {
+        self.open.span() | self.close.span()
     }
 }
 
-impl Parse for AssignStmt {
-    fn parse(parser: &mut Parser) -> Result<Self> {
-        Ok(Self {
-            ident: parser.parse()?,
-            equal: parser.parse()?,
-            expr: parser.parse()?,
-            eol: parser.parse()?,
-        })
-    }
+#[derive(Clone, Debug, Spanned)]
+pub struct Argument {
+    pub ident: Ident,
+    pub semi_colon: SemiColon,
+    pub ty: Type,
 }
 
-impl Parse for ExprStmt {
-    fn parse(parser: &mut Parser) -> Result<Self> {
-        Ok(Self {
-            expr: parser.parse()?,
-        })
-    }
+#[derive(Clone, Debug, Spanned)]
+pub enum ListenerArgument {
+    Expanded(Type),
+    Args(Argument),
 }
 
-fn parse_ident_stmt(parser: &mut Parser) -> Result<Stmt> {
-    let ident = parser.parse::<Ident>()?;
-
-    let tok = parser.peek_token()?;
-
-    match tok.kind() {
-        TokenKind::Symbol(Symbol::ColonEqual) => Ok(Stmt::AssignNew(AssignNewStmt {
-            ident,
-            equal: parser.parse()?,
-            expr: parser.parse()?,
-            eol: parser.parse()?,
-        })),
-        TokenKind::Symbol(Symbol::Equal) => Ok(Stmt::Assign(AssignStmt {
-            ident,
-            equal: parser.parse()?,
-            expr: parser.parse()?,
-            eol: parser.parse()?,
-        })),
-        kind => {
-            Err(Error::new("expected ['=', ':=']")
-                .with_hint(format!("found {:?}", kind), tok.span()))
-        }
-    }
+#[derive(Clone, Debug, Spanned)]
+pub struct ListenerArguments {
+    pub open: OpenParen,
+    pub args: Punctuated<ListenerArgument, Comma>,
+    pub close: CloseParen,
 }
 
-impl Parse for Stmt {
-    fn parse(parser: &mut Parser) -> Result<Self> {
-        let tok = parser.peek_token()?;
+#[derive(Clone, Debug, Spanned)]
+pub struct WhereClause {
+    pub _where: Where,
+    pub bounds: Punctuated<Expr, Comma>,
+}
 
-        match tok.kind() {
-            TokenKind::Ident(_) => Ok(parse_ident_stmt(parser)?),
-            kind => Err(Error::new("expected statement")
-                .with_hint(format!("found '{:?}'", kind), tok.span())),
-        }
-    }
+#[derive(Clone, Debug, Spanned)]
+pub struct DefaultEvent {
+    pub ident: Ident,
+}
+
+#[derive(Clone, Debug, Spanned)]
+pub struct DefaultEvents {
+    pub events: Tupled<Punctuated<DefaultEvent, Comma>>,
+}
+
+#[derive(Clone, Debug, Spanned)]
+pub struct LnStmt {
+    pub ln: Ln,
+    pub ident: Ident,
+    pub default_events: SpannedOption<DefaultEvents>,
+    pub args: ListenerArguments,
+    pub where_clause: SpannedOption<WhereClause>,
+    pub block: Block,
+}
+
+#[derive(Clone, Debug, Spanned)]
+pub struct ExprStmt {
+    pub expr: Expr,
+}
+
+#[derive(Clone, Debug, Spanned)]
+pub enum Stmt {
+    Ln(LnStmt),
+    AssignNew(AssignNewStmt),
+    Assign(AssignStmt),
+    Expr(ExprStmt),
 }

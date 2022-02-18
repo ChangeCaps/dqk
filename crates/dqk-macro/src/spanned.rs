@@ -1,13 +1,15 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Fields, Generics};
 
 pub fn derive_spanned(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
+    let mut input = parse_macro_input!(input as DeriveInput);
 
     let name = input.ident;
 
     let span = span(input.data);
+
+    add_generic(&mut input.generics);
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
@@ -20,6 +22,12 @@ pub fn derive_spanned(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     };
 
     proc_macro::TokenStream::from(expanded)
+}
+
+fn add_generic(generics: &mut Generics) {
+    for generics in generics.type_params_mut() {
+        generics.bounds.push_value(parse_quote!(crate::Spanned));
+    }
 }
 
 fn span(data: Data) -> TokenStream {

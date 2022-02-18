@@ -1,8 +1,7 @@
-use std::{path::PathBuf, fs};
+use std::{fs, path::PathBuf};
 
 use clap::StructOpt;
-use dqk_ast::{Stmt, StringAllocator};
-use dqk_parser::Parser;
+use dqk_parser::{Parser, Stmt, StringAllocator};
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -24,5 +23,5 @@ fn main() {
         &mut string_allocator,
     );
 
-    println!("{:?}", parser.parse::<Stmt>());
+    println!("{:#?}", parser.parse::<Stmt>());
 }

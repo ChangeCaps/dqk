@@ -60,24 +60,7 @@ name = "dqk"
 version = "0.1.0"
 dependencies = [
  "clap",
- "dqk-ast",
- "dqk-error",
  "dqk-parser",
-]
-
-[[package]]
-name = "dqk-ast"
-version = "0.1.0"
-dependencies = [
- "dqk-macro",
- "serde",
-]
-
-[[package]]
-name = "dqk-error"
-version = "0.1.0"
-dependencies = [
- "dqk-ast",
 ]
 
 [[package]]
@@ -93,8 +76,8 @@ dependencies = [
 name = "dqk-parser"
 version = "0.1.0"
 dependencies = [
- "dqk-ast",
- "dqk-error",
+ "dqk-macro",
+ "serde",
 ]
 
 [[package]]

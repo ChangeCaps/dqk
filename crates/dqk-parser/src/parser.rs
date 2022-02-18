@@ -1,9 +1,9 @@
 use std::{iter::Peekable, path::Path, str::Chars};
 
-use dqk_ast::{Delim, Integer, IntegerKind, Span, StringAllocator, Symbol, Token, TokenKind};
-use dqk_error::{Error, Result};
-
-use crate::Parse;
+use crate::{
+    Error, Integer, IntegerKind, Keyword, Parse, Result, Span, StringAllocator, Symbol, Token,
+    TokenKind,
+};
 
 pub struct Parser<'a> {
     string_allocator: &'a mut StringAllocator,
@@ -138,16 +138,15 @@ impl<'a> Parser<'a> {
             };
         }
 
-        use Delim::*;
         use Symbol::*;
 
         symbol! {
-            '(' => Open(Paren),
-            '[' => Open(Brace),
-            '{' => Open(Bracket),
-            ')' => Close(Paren),
-            ']' => Close(Brace),
-            '}' => Close(Bracket),
+            '(' => OpenParen,
+            '{' => OpenBrace,
+            '[' => OpenBracket,
+            ')' => CloseParen,
+            '}' => CloseBrace,
+            ']' => CloseBracket,
             ':' =>
                 > '=' => ColonEqual,
                 Colon,
@@ -178,6 +177,7 @@ impl<'a> Parser<'a> {
         }
 
         if self.peek_char() == Some('\n') {
+            self.next_char();
             return Ok(Token::new(TokenKind::Eol, self.span()));
         }
 
@@ -191,7 +191,19 @@ impl<'a> Parser<'a> {
         }
 
         if let Some(ident) = self.parse_ident() {
-            return Ok(Token::new(TokenKind::Ident(ident), start | self.span()));
+            let kind = match ident {
+                "event" => TokenKind::Keyword(Keyword::Event),
+                "query" => TokenKind::Keyword(Keyword::Query),
+                "where" => TokenKind::Keyword(Keyword::Where),
+                "ln" => TokenKind::Keyword(Keyword::Ln),
+                "fn" => TokenKind::Keyword(Keyword::Fn),
+                "if" => TokenKind::Keyword(Keyword::If),
+                "for" => TokenKind::Keyword(Keyword::For),
+                "else" => TokenKind::Keyword(Keyword::Else),
+                "return" => TokenKind::Keyword(Keyword::Return),
+                _ => TokenKind::Ident(ident),
+            };
+            return Ok(Token::new(kind, start | self.span()));
         }
 
         if let Some(symbol) = self.parse_symbol() {
@@ -224,18 +236,29 @@ impl<'a> Parser<'a> {
         T::parse(self)
     }
 
-    pub fn expect_eol(&mut self) -> Result<()> {
+    pub fn expect(&mut self, kind: TokenKind) -> Result<Span> {
+        let tok = self.next_token()?;
+
+        if tok.kind() == kind {
+            Ok(tok.span())
+        } else {
+            Err(Error::new(format!("expected '{:?}'", kind))
+                .with_hint(format!("found '{:?}'", tok.kind()), tok.span()))
+        }
+    }
+
+    pub fn expect_eol(&mut self) -> Result<Span> {
         let tok = self.next_token()?;
 
         match tok.kind() {
-            TokenKind::Eol | TokenKind::Eof => Ok(()),
+            TokenKind::Eol | TokenKind::Eof => Ok(tok.span()),
             kind => Err(Error::new("expected 'end of line'")
                 .with_hint(format!("found '{:?}'", kind), tok.span())),
         }
     }
 
     pub fn skip_eol(&mut self) -> Result<()> {
-        while self.peek_token()?.kind().is_eol() {
+        while self.peek_token()?.kind() == TokenKind::Eol {
             self.next_token()?;
         }
 

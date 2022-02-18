@@ -1,34 +1,21 @@
-use dqk_ast::{Expr, LitFloat, LitInt, LitStr, LiteralExpr, TokenKind};
-use dqk_error::{Error, Result};
+use dqk_macro::Spanned;
 
-use crate::{Parse, Parser};
+use crate::{EqualEqual, LitFloat, LitInt, LitStr};
 
-impl Parse for LiteralExpr {
-    fn parse(parser: &mut Parser) -> Result<Self> {
-        let tok = parser.next_token()?;
-
-        match tok.kind() {
-            TokenKind::Integer(value) => Ok(Self::Integer(LitInt::new(value, tok.span()))),
-            TokenKind::Float(value) => Ok(Self::Float(LitFloat::new(value, tok.span()))),
-            TokenKind::String(value) => Ok(Self::String(LitStr::new(value, tok.span()))),
-            kind => {
-                Err(Error::new("expected literal")
-                    .with_hint(format!("found '{:?}'", kind), tok.span()))
-            }
-        }
-    }
+#[derive(Clone, Debug, Spanned)]
+pub enum LiteralExpr {
+    Integer(LitInt),
+    Float(LitFloat),
+    String(LitStr),
 }
 
-impl Parse for Expr {
-    fn parse(parser: &mut Parser) -> Result<Self> {
-        let tok = parser.peek_token()?;
+#[derive(Clone, Debug, Spanned)]
+pub enum BinOp {
+    Eq(EqualEqual),
+}
 
-        match tok.kind() {
-            TokenKind::Integer(_) | TokenKind::Float(_) | TokenKind::String(_) => {
-                Ok(Self::Literal(parser.parse()?))
-            }
-            kind => Err(Error::new("expected expression")
-                .with_hint(format!("found '{:?}'", kind), tok.span())),
-        }
-    }
+#[derive(Clone, Debug, Spanned)]
+pub enum Expr {
+    Literal(LiteralExpr),
+    BinOp(Box<Expr>, BinOp, Box<Expr>),
 }

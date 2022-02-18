@@ -1,6 +1,6 @@
 use std::panic::Location;
 
-use dqk_ast::Span;
+use crate::Span;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

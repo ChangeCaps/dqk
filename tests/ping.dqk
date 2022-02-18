@@ -1,6 +1,5 @@
-log_message<message_sent>(Message) 
+ln log_message<message_sent>(Message) 
 where
-	contents.lower() == "ping"
 {
-	channel.send_message "pong"
+	
 }
