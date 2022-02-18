@@ -17,9 +17,9 @@ pub struct Span {
 }
 
 impl Span {
-    pub const fn new(file_path: &'static Path, start: usize, length: usize) -> Self {
+    pub const fn new(file_path: Option<&'static Path>, start: usize, length: usize) -> Self {
         Self {
-            file_path: Some(file_path),
+            file_path,
             start,
             length,
         }

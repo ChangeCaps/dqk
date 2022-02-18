@@ -1,5 +1,6 @@
 ln log_message<message_sent>(Message) 
 where
+	contents == 'ping',
 {
-	
+	channel.send 'pong'
 }

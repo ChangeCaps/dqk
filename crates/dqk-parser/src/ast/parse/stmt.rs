@@ -1,7 +1,7 @@
 use crate::{
-    AssignNewStmt, AssignStmt, Block, CloseParen, DefaultEvent, DefaultEvents, Error, ExprStmt,
-    Ident, Keyword, ListenerArgument, ListenerArguments, LnStmt, Parse, Parser, Punctuated, Result,
-    SpannedOption, Stmt, Symbol, TokenKind, Tupled, WhereClause,
+    AssignNewStmt, AssignStmt, Block, CloseParen, DefaultEvent, DefaultEvents, Error, Expr,
+    ExprStmt, Ident, Keyword, ListenerArgument, ListenerArguments, LnStmt, Parse, Parser,
+    Punctuated, Result, SpannedOption, Stmt, Symbol, TokenKind, Tupled, WhereClause,
 };
 
 impl Parse for AssignNewStmt {
@@ -57,10 +57,19 @@ impl Parse for WhereClause {
         let _where = parser.parse()?;
         parser.skip_eol()?;
 
-        Ok(Self {
-            _where,
-            bounds: Punctuated::parse_terminated(parser, TokenKind::Symbol(Symbol::OpenBrace))?,
-        })
+        let bounds = Punctuated::parse_terminated_with(
+            parser,
+            Expr::parse,
+            |parser| {
+                let punct = parser.parse()?;
+                parser.skip_eol()?;
+                Ok(punct)
+            },
+            TokenKind::Symbol(Symbol::OpenBrace),
+        )?;
+        parser.skip_eol()?;
+
+        Ok(Self { _where, bounds })
     }
 }
 
@@ -157,10 +166,9 @@ fn parse_ident_stmt(parser: &mut Parser) -> Result<Stmt> {
             expr: parser.parse()?,
             eol: parser.parse()?,
         })),
-        kind => {
-            Err(Error::new("expected ['=', ':=']")
-                .with_hint(format!("found {:?}", kind), tok.span()))
-        }
+        _ => Ok(Stmt::Expr(ExprStmt {
+            expr: Expr::parse_with_ident(parser, ident)?,
+        })),
     }
 }
 
@@ -171,6 +179,7 @@ impl Parse for Stmt {
         match tok.kind() {
             TokenKind::Keyword(Keyword::Ln) => Ok(Self::Ln(parser.parse()?)),
             TokenKind::Ident(_) => Ok(parse_ident_stmt(parser)?),
+            kind if kind.starts_expr() => Ok(Self::Expr(parser.parse()?)),
             kind => Err(Error::new("expected statement")
                 .with_hint(format!("found '{:?}'", kind), tok.span())),
         }

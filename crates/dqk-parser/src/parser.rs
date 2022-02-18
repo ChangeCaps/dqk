@@ -7,7 +7,7 @@ use crate::{
 
 pub struct Parser<'a> {
     string_allocator: &'a mut StringAllocator,
-    file_path: &'static Path,
+    file_path: Option<&'static Path>,
     start: usize,
     chars: Peekable<Chars<'a>>,
     next_token: Option<Token>,
@@ -16,7 +16,7 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     pub fn new(
         src: &'a str,
-        file_path: &'static Path,
+        file_path: Option<&'static Path>,
         string_allocator: &'a mut StringAllocator,
     ) -> Self {
         Self {
@@ -117,6 +117,31 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_string(&mut self) -> Option<Result<&'static str>> {
+        if self.peek_char() != Some('\'') {
+            return None;
+        }
+
+        self.next_char();
+
+        let starts = self.span();
+        let mut string = String::new();
+
+        loop {
+            if let Some(ch) = self.next_char() {
+                if ch == '\'' {
+                    break Some(Ok(self.string_allocator.get(&string)));
+                } else {
+                    string.push(ch);
+                }
+            } else {
+                break Some(Err(
+                    Error::new("unterminated string").with_hint("starting at", starts)
+                ));
+            }
+        }
+    }
+
     fn parse_symbol(&mut self) -> Option<Symbol> {
         macro_rules! symbol {
             ($($ch:literal => $(> $second:literal => $second_symbol:expr,)* $symbol:expr $(,)?,)*) => {
@@ -204,6 +229,10 @@ impl<'a> Parser<'a> {
                 _ => TokenKind::Ident(ident),
             };
             return Ok(Token::new(kind, start | self.span()));
+        }
+
+        if let Some(string) = self.parse_string() {
+            return Ok(Token::new(TokenKind::String(string?), start | self.span()));
         }
 
         if let Some(symbol) = self.parse_symbol() {

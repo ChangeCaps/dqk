@@ -17,11 +17,7 @@ fn main() {
 
     let mut string_allocator = StringAllocator::new();
 
-    let mut parser = Parser::new(
-        &source,
-        string_allocator.get_path("path"),
-        &mut string_allocator,
-    );
+    let mut parser = Parser::new(&source, None, &mut string_allocator);
 
     println!("{:#?}", parser.parse::<Stmt>());
 }

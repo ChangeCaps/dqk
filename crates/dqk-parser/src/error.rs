@@ -1,6 +1,6 @@
 use std::panic::Location;
 
-use crate::Span;
+use crate::{Span, Token};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -23,6 +23,11 @@ impl Error {
 
     pub fn with_hint(mut self, msg: impl Into<String>, span: Span) -> Self {
         self.hints.push(ErrorHint::new(msg, span));
+        self
+    }
+
+    pub fn with_fount_hint(mut self, found: Token) -> Self {
+        self.hints.push(ErrorHint::new(format!("found '{:?}'", found.kind()), found.span()));
         self
     }
 

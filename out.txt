@@ -1,0 +1,20 @@
+Err(
+    Error {
+        hints: [
+            ErrorHint {
+                span: Span {
+                    file_path: None,
+                    start: 78,
+                    length: 1,
+                },
+                msg: "found 'Symbol(OpenParen)'",
+            },
+        ],
+        msg: "expected expression",
+        location: Location {
+            file: "crates\\dqk-parser\\src\\ast\\parse\\expr.rs",
+            line: 56,
+            col: 18,
+        },
+    },
+)
