@@ -1,11 +1,25 @@
+use std::{path::PathBuf, fs};
+
+use clap::StructOpt;
 use dqk_ast::{Stmt, StringAllocator};
 use dqk_parser::Parser;
 
+#[derive(clap::Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Path to source
+    source: PathBuf,
+}
+
 fn main() {
+    let args = Args::parse();
+
+    let source = fs::read_to_string(&args.source).unwrap();
+
     let mut string_allocator = StringAllocator::new();
 
     let mut parser = Parser::new(
-        "x = 0",
+        &source,
         string_allocator.get_path("path"),
         &mut string_allocator,
     );

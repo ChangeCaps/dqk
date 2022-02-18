@@ -9,6 +9,10 @@ edition = "2021"
 members = ["crates/*"]
 
 [dependencies] 
+# dqk
 dqk-ast = { version = "0.1.0", path = "crates/dqk-ast" }
 dqk-error = { version = "0.1.0", path = "crates/dqk-error" }
 dqk-parser = { version = "0.1.0", path = "crates/dqk-parser" }
+
+# other
+clap = { version = "^3.1.0", features = ["derive"] }
